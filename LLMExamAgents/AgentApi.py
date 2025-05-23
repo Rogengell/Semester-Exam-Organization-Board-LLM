@@ -5,6 +5,7 @@ import uvicorn
 import json
 import os
 
+
 # Define input schema
 class UserStoryInput(BaseModel):
     story: str
@@ -23,10 +24,6 @@ async def analyze_story(input: UserStoryInput):
         raise HTTPException(status_code=500, detail="Agent failed to generate tasks.")
     
     return {"tasks": tasks}
-    return {
-        "user_story": story,
-        "analysis_result": "access"
-    }
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8008)
+    uvicorn.run(app, host="0.0.0.0", port=8008, timeout_keep_alive=120, timeout=300)
