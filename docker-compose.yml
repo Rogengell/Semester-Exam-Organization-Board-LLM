@@ -57,6 +57,8 @@ services:
       - "8008:8008"
     networks:
       - app-net
+    environment:
+      - OLLAMA_HOST=http://host.docker.internal:11434  # Point to Ollama on the host machine
 
 volumes:
   mssql-user:
