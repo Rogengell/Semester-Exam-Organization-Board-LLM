@@ -1,3 +1,4 @@
+import re
 import json
 from autogen import AssistantAgent, ConversableAgent, UserProxyAgent
 from LLMExamAgents.config import LLM_CONFIG
@@ -36,6 +37,9 @@ Project Component Description:
 {input}
 
 Respond only with the tasks. Do not terminate prematurely, always provide task details.
+Do not provide breakdown, only tasks, in the provided format.
+If user does not provide feedback, any output or is empty, determine if more task are needed else respond with "terminate" in uppercase.
+After a maximum of 4 iterations respond with "terminate" in uppercase.
 """ 
 
 
@@ -45,7 +49,7 @@ def create_task_creator_agent() -> AssistantAgent:
         name="TaskCreatorAgent",
         system_message="You are a helpful assistant that breaks down project descriptions into tasks with time estimates.",
         llm_config=LLM_CONFIG,
-        is_termination_msg=lambda msg: msg.get("content") is not None and "TERMINATE" in msg.get("content", ""),
+        is_termination_msg=lambda msg: msg.get("content") is not None and "TERMINATE" in msg.get("content"),
         code_execution_config={"allow_code_execution": True},
     )
 
@@ -53,34 +57,42 @@ def create_user_proxy() -> UserProxyAgent:
     user_proxy = UserProxyAgent(
         name="User",
         llm_config=False,
-        is_termination_msg=lambda msg: msg.get("content") is not None and "TERMINATE" in msg.get("content", ""),
+        is_termination_msg=lambda msg: msg.get("content") is not None and "TERMINATE" in msg.get("content"),
         human_input_mode="NEVER",
     )
 
     user_proxy.register_for_execution(name="calculate_pert")(calculate_pert)
     return user_proxy
 
-def extract_json_tasks(response_content: str):
-    try:
-        # Strip extra whitespace and handle common formatting issues
-        response_content = response_content.strip()
+def extract_json_tasks(history):
+    all_tasks = []
 
-        # Look for JSON-like structure, assuming response is a valid list of tasks
-        if response_content.startswith("[") and response_content.endswith("]"):
-            task_json_str = response_content
-        else:
-            # Handle cases where there are extra characters (e.g., "TERMINATE" or other content)
-            start = response_content.find("[")
-            end = response_content.rfind("]") + 1
-            task_json_str = response_content[start:end]
+    for message in history:
+        # Ensure we only process dictionary-type messages
+        if isinstance(message, dict) and "content" in message:
+            content = message["content"].strip()
 
-        # Parse the JSON and return the list of tasks
-        tasks = json.loads(task_json_str)
-        print(tasks)
-        return tasks
-    except Exception as e:
-        print("Failed to parse JSON:", e)
-        return []
+            # Skip empty or placeholder content
+            if (
+                not content
+                or '"TaskName": "..."' in content
+                or '"ExpectedTime":' not in content
+                or "TERMINATE" in content
+            ):
+                continue
+
+            # Try extracting a JSON list from the content
+            try:
+                json_str_matches = re.findall(r'\[\s*{.*?}\s*\]', content, re.DOTALL)
+                for match in json_str_matches:
+                    parsed = json.loads(match)
+                    if isinstance(parsed, list):
+                        all_tasks.extend(parsed)
+            except Exception as e:
+                print("Failed to parse content:", e)
+                continue
+            
+    return all_tasks
     
 def calculate_pert(optimistic: float, most_likely: float, pessimistic: float) -> float:
     return round((optimistic + 4 * most_likely + pessimistic) / 6, 2)
@@ -88,17 +100,17 @@ def calculate_pert(optimistic: float, most_likely: float, pessimistic: float) ->
 async def generate_tasks_from_description(description: str):
     user_proxy = create_user_proxy()
     task_creator_agent = create_task_creator_agent()
-    print("before agent")
+
     user_proxy.initiate_chat(
         task_creator_agent,
         message=TASK_BREAKDOWN_PROMPT.format(input=description)
     )
-    print("after agent")
+
     history = task_creator_agent.chat_messages.get(user_proxy, [])
     if not history:
-        return None
+        return []
     
-    print(history)
+    print("History:", str(history))
+
     content = history[-1].get("content", "")
-    print(content)
     return extract_json_tasks(content)
