@@ -291,5 +291,23 @@ namespace OrganizationBoard.Controller
         }
 
         #endregion
+
+        #region Agent Endpoints
+        [HttpPost("AgentTaskGeneration")]
+        [Authorize(Roles = "Team Leader")]
+        public async Task<IActionResult> AgentTaskGeneration(string descript)
+        {
+            using var client = new HttpClient();
+            var request = new
+            {
+                story = descript
+            };
+
+            var response = await client.PostAsJsonAsync("http://agent-python:8008/AgentTaskGeneration", request);
+            var json = await response.Content.ReadAsStringAsync();
+
+            return Content(json, "application/json");
+        }
+        #endregion
     }
 }

@@ -36,6 +36,21 @@
                 "package": "${workspaceFolder}/orgweb/package.json",
                 "localRoot": "${workspaceFolder}/orgweb"
             }
+        },
+        {
+            "name": "Docker: Python - Fastapi",
+            "type": "docker",
+            "request": "launch",
+            "preLaunchTask": "docker-run: debug",
+            "python": {
+                "pathMappings": [
+                    {
+                        "localRoot": "${workspaceFolder}",
+                        "remoteRoot": "/app"
+                    }
+                ],
+                "projectType": "fastapi"
+            }
         }
     ]
 }
