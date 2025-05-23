@@ -23,6 +23,8 @@ services:
       - ASPNETCORE_ENVIRONMENT=Development
     ports:
       - 8080:8080
+    networks:
+      - app-net
     depends_on:
       migration_service:
         condition: service_completed_successfully
@@ -47,5 +49,18 @@ services:
     environment:
       - NODE_ENV=development
 
+  agent-python:
+    build:
+      context: .
+      dockerfile: LLMExamAgents/Dockerfile
+    ports:
+      - "8008:8008"
+    networks:
+      - app-net
+
 volumes:
   mssql-user:
+
+networks:
+  app-net:
+    driver: bridge

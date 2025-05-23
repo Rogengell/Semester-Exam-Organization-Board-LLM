@@ -78,12 +78,17 @@
             "type": "docker-run",
             "label": "docker-run: debug",
             "dependsOn": [
-                "docker-build: debug"
+                "docker-build"
             ],
-            "dockerRun": {},
-            "netCore": {
-                "appProject": "${workspaceFolder}/EFrameWork/EFrameWork.csproj",
-                "enableDebugging": true
+            "python": {
+                "args": [
+                    "LLMExamAgents.AgentApi:app",
+                    "--host",
+                    "0.0.0.0",
+                    "--port",
+                    "8008"
+                ],
+                "module": "uvicorn"
             }
         },
         {
@@ -100,14 +105,12 @@
         {
             "type": "docker-build",
             "label": "docker-build",
-            "platform": "node",
+            "platform": "python",
             "dockerBuild": {
-                "dockerfile": "${workspaceFolder}/orgweb/Dockerfile",
-                "context": "${workspaceFolder}/orgweb",
+                "tag": "semesterexamorganizationboardllm:latest",
+                "dockerfile": "${workspaceFolder}/Dockerfile",
+                "context": "${workspaceFolder}",
                 "pull": true
-            },
-            "node": {
-                "package": "${workspaceFolder}/orgweb/package.json"
             }
         }
     ]
