@@ -294,7 +294,8 @@ namespace OrganizationBoard.Controller
 
         #region Agent Endpoints
         [HttpPost("AgentTaskGeneration")]
-        [Authorize(Roles = "Team Leader")]
+        [AllowAnonymous]
+        //[Authorize(Roles = "Team Leader")]
         public async Task<IActionResult> AgentTaskGeneration(string descript)
         {
             using var client = new HttpClient();
