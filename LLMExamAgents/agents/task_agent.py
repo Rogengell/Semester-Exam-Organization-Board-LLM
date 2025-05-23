@@ -16,16 +16,16 @@ You are a project planning assistant.
 
 [
   {{
-    "TaskName": "...",
-    "Description": "...",
+    "TaskName": "",
+    "Description": "",
     "Optimistic": 2,
     "MostLikely": 4,
     "Pessimistic": 6,
     "ExpectedTime": 4.0
   }},
   {{
-    "TaskName": "...",
-    "Description": "...",
+    "TaskName": "",
+    "Description": "",
     "Optimistic": 3,
     "MostLikely": 5,
     "Pessimistic": 7,
@@ -68,30 +68,25 @@ def extract_json_tasks(history):
     all_tasks = []
 
     for message in history:
-        # Ensure we only process dictionary-type messages
         if isinstance(message, dict) and "content" in message:
             content = message["content"].strip()
-
-            # Skip empty or placeholder content
-            if (
-                not content
-                or '"TaskName": "..."' in content
-                or '"ExpectedTime":' not in content
-                or "TERMINATE" in content
-            ):
+            if not content or content.strip().upper() == "TERMINATE":
                 continue
 
-            # Try extracting a JSON list from the content
             try:
                 json_str_matches = re.findall(r'\[\s*{.*?}\s*\]', content, re.DOTALL)
                 for match in json_str_matches:
                     parsed = json.loads(match)
                     if isinstance(parsed, list):
-                        all_tasks.extend(parsed)
+                        valid_tasks = [
+                            task for task in parsed
+                            if task.get("TaskName") and task.get("Description")
+                        ]
+                        all_tasks.extend(valid_tasks)
             except Exception as e:
                 print("Failed to parse content:", e)
                 continue
-            
+
     return all_tasks
     
 def calculate_pert(optimistic: float, most_likely: float, pessimistic: float) -> float:
@@ -110,7 +105,10 @@ async def generate_tasks_from_description(description: str):
     if not history:
         return []
     
-    print("History:", str(history))
+    print("History: ", str(history))
 
-    content = history[-1].get("content", "")
-    return extract_json_tasks(content)
+    tasks = extract_json_tasks(history)
+
+    print("Tasks: "+ str(tasks))
+
+    return tasks
