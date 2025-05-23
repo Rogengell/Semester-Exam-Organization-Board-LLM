@@ -294,11 +294,13 @@ namespace OrganizationBoard.Controller
 
         #region Agent Endpoints
         [HttpPost("AgentTaskGeneration")]
-        [AllowAnonymous]
-        //[Authorize(Roles = "Team Leader")]
+        [Authorize(Roles = "Team Leader")]
         public async Task<IActionResult> AgentTaskGeneration(string descript)
         {
-            using var client = new HttpClient();
+            using var client = new HttpClient
+            {
+                Timeout = TimeSpan.FromMinutes(5)  // Increase timeout if necessary
+            };
             var request = new
             {
                 story = descript
