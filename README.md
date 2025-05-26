@@ -1,27 +1,44 @@
 # Semester-Exam Organization-Board
-Exam for Secure Software Development
+
+Exam for Machine-Learning
 
 # Setup
 
-## Migrate ef framework
+## Install all packages
+
 ```bash
-dotnet ef migrations add FixTables
+pip install -r requirements.txt
 ```
+
+## Download Model
+
+in this project we are using a local model from Ollama, we recommending to download the llama3.1:8b model. If you prefer an other model
+than you have to change the config file, but the model ist tested based on the recommended model. How to download model:
+´´´bash
+ollama run llama3.1:8b
+´´´
+when the model is downloaded and installed you can go on with the next section
+
 ## Compose docker
+
 ```bash
-docker-compose up
+docker-compose up --build agent-python
 ```
 
-# Testing the features using Swagger
-Once docker has been composed, go to:
+# Testing the Ai Agent in Postman
+
+Once docker has been composed, open Postman desktop and create a new post request to this endpoint
+
 ```bash
-localhost:8080/swagger
+http://localhost:8080/AgentTaskGeneration
 ```
+
 ## Steps
-1. Use the **api/Login/public-key** and save the entire key.
-2. Use the **api/Login/EncryptPasswordBummyForWebsideResponsibility** - Type password and your public key, Execute and save your encrypted password
-3. Use the **api/Login/Login** - Type in your Mail and your encrypted password and save the token it gives you.
-4. Use the token to enter the Authorize button top right, make sure to write Bearer infront of the token.
-5. You are now an Admin and can do anyting. If creating users: RoleId = 1(Admin), 2(Team Lead), 3(Team Member)
 
+1. click on body and create a json like this
 
+´´´
+{
+"story":"I want to build an TODO APP"
+}
+´´´ 2. then send the request and wait 3-5 min depending on the complexity
