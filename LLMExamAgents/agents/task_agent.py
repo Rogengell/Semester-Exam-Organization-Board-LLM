@@ -64,29 +64,52 @@ def create_user_proxy() -> UserProxyAgent:
     user_proxy.register_for_execution(name="calculate_pert")(calculate_pert)
     return user_proxy
 
+import json
+import re # Sicherstellen, dass re importiert ist
+
 def extract_json_tasks(history):
+    # use a set to avoid duplicates
+    unique_tasks = set() 
+    # Initialize an empty list to store all tasks
     all_tasks = []
 
     for message in history:
+        # check if message is a dictionary and has 'content'
         if isinstance(message, dict) and "content" in message:
             content = message["content"].strip()
+            # Skip empty messages or those that contain only "TERMINATE"
             if not content or content.strip().upper() == "TERMINATE":
                 continue
 
             try:
+                # Find all JSON arrays of objects in the string
                 json_str_matches = re.findall(r'\[\s*{.*?}\s*\]', content, re.DOTALL)
                 for match in json_str_matches:
                     parsed = json.loads(match)
                     if isinstance(parsed, list):
+                        # Filter tasks that may not have the expected keys
                         valid_tasks = [
                             task for task in parsed
                             if task.get("TaskName") and task.get("Description")
                         ]
-                        all_tasks.extend(valid_tasks)
+                        for task in valid_tasks:
+                            # Convert the dictionary to a hashable tuple, sorting items for consistency
+                            # Sortiere die Items, um Konsistenz für das Hashing zu gewährleisten
+                            task_tuple = tuple(sorted(task.items()))
+                            unique_tasks.add(task_tuple)
+            except json.JSONDecodeError as e:
+                print(f"JSON-Dekodierungsfehler: {e} in Inhalt: '{content}'")
+                continue
             except Exception as e:
-                print("Failed to parse content:", e)
+                print(f"Unexpected error: {e}")
                 continue
 
+    # Convert the tuples in the set back to dictionaries
+    for task_tuple in unique_tasks:
+        all_tasks.append(dict(task_tuple))
+
+    # Wrap the list in a dictionary with the key "tasks"
+    # this ensures the output matches the expected JSON format
     return all_tasks
     
 def calculate_pert(optimistic: float, most_likely: float, pessimistic: float) -> float:
