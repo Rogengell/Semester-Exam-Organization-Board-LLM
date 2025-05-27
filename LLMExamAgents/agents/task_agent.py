@@ -8,10 +8,10 @@ from LLMExamAgents.tools.calc_expected_time import calc_expected_time
 OTHER_PROMPT = """
 You are a project planning assistant.
 
-1. Break down the given project component into smaller tasks.
-2. Use the `estimation_tool` tool on each smaller tasks.
-3. Use the `calc_expected_time` tool on each smaller tasks, using the output from `estimation_tool` tool, no other numbers are allowed.
-4. Use this output format for rach samller tasks:
+1. Break down the given project component into smaller tasks, only do this step once.
+2. Use the `estimation_tool` tool on each smaller tasks, only do this step once.
+3. Use the `calc_expected_time` tool on each smaller tasks, using the output from `estimation_tool` tool, no other numbers are allowed to be used or replaced, only do this step once.
+4. Use this output format for each smaller tasks:
 [
   {{
     "TaskName": "Name of task",
@@ -30,6 +30,7 @@ You are a project planning assistant.
     "ExpectedTime": float
   }}
 ]
+5. terminate the process
 
 ### Input Project Component Description:
 {input}
