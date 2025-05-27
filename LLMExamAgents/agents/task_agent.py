@@ -8,19 +8,10 @@ from LLMExamAgents.tools.calc_expected_time import calc_expected_time
 OTHER_PROMPT = """
 You are a project planning assistant.
 
-1.
-- Break down the given project component into smaller tasks.
-- Then, for each task:
-    - Use the `estimation_tool` on that specific task to get:
-        - Optimistic
-        - MostLikely
-        - Pessimistic
-        - Immediately call `calc_expected_time` using Optimistic,MostLikely,Pessimistic.
-    - Do not hardcode or use any tools more than once per task.
-
-2.
-Use this output format:
-
+1. Break down the given project component into smaller tasks.
+2. Use the `estimation_tool` tool on each smaller tasks.
+3. Use the `calc_expected_time` tool on each smaller tasks, using the output from `estimation_tool` tool, no other numbers are allowed.
+4. Use this output format for rach samller tasks:
 [
   {{
     "TaskName": "Name of task",
@@ -43,10 +34,6 @@ Use this output format:
 ### Input Project Component Description:
 {input}
 
-### Rules:
-- If the input is empty or unclear, or if this is a follow-up with no additional user feedback, respond with <TERMINATE> on its own line. Do not explain or elaborate.
-- After one iteration, respond with <TERMINATE> on its own line. Do not explain or elaborate.
-
 """
 
 def check_termination(msg):
@@ -57,7 +44,12 @@ def check_termination(msg):
 def create_task_creator_agent() -> AssistantAgent:
     agent = AssistantAgent(
         name="TaskCreatorAgent",
-        system_message="You are a helpful assistant that breaks down project descriptions into tasks with time estimates.",
+        system_message= "You are a helpful ai assistant"
+                        "You can break down project descriptions into smaller, meaningful tasks."
+                        "You can read the data from the estimation_tool tool, it will return a dictionary of Optimistic, MostLikely and Pessimistic."
+                        "Given the data from estimation_tool tool, you can use calc_expected_time tool to calculate the ExpectedTime."
+                        "Don't include any other text in your response."
+                        "Respond with <TERMINATE> on its own line, do not explain or elaborate when task are shown in json format",
         llm_config=LLM_CONFIG,
         is_termination_msg=check_termination,
         code_execution_config={"allow_code_execution": True},
