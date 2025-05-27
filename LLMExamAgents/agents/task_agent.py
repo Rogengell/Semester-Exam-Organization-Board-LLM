@@ -5,52 +5,74 @@ from LLMExamAgents.config import LLM_CONFIG
 from LLMExamAgents.tools.estimation_tool import estimation_tool
 from LLMExamAgents.tools.calc_expected_time import calc_expected_time
 
-OTHER_PROMPT = """
+OTHER_PROMPT = "Input Project Component Description:\n{input}"
+
+SYSTEM_MESSAGE = """
 You are a project planning assistant.
 
-1. Break down the given project component into smaller tasks, only do this step once.
-2. Use the `estimation_tool` tool on each smaller tasks, only do this step once.
-3. Use the `calc_expected_time` tool on each smaller tasks, using the output from `estimation_tool` tool, no other numbers are allowed to be used or replaced, only do this step once.
-4. Use this output format for each smaller tasks:
+IMPORTANT RULES (you must obey them):
+1. Do NOT use or attempt to call a tool named 'break_down_project' — it does NOT exist.
+2. You MUST break down the input project component yourself, step by step.
+3. For each smaller task, call 'estimation_tool' ONCE and wait for the result.
+4. Then pass the returned result (without changing anything) to 'calc_expected_time'.
+5. NEVER make up any numbers or durations yourself.
+6. Use the exact result from estimation_tool for calc_expected_time.
+
+OUTPUT FORMAT:
+Return a JSON array of tasks, like this:
 [
-  {{
+  {
     "TaskName": "Name of task",
     "Description": "Brief description",
     "Optimistic": float,
     "MostLikely": float,
     "Pessimistic": float,
     "ExpectedTime": float
-  }},
-  {{
+  },
+  {
     "TaskName": "Name of task",
     "Description": "Brief description",
     "Optimistic": float,
     "MostLikely": float,
     "Pessimistic": float,
     "ExpectedTime": float
-  }}
+  }
 ]
-5. terminate the process
 
-### Input Project Component Description:
-{input}
+After the full output, respond on a new line with exactly:
+<TERMINATE>
 
+Do not include any explanation or text after <TERMINATE>.
 """
 
 def check_termination(msg):
-    content = msg.get("content", "").strip().upper().replace("<", "").replace(">", "")
-    print(f"Checking termination on message: {repr(content)}")
-    return content == "TERMINATE"
+    content = msg.get("content", "")
+
+    # Extract all JSON-like blocks using regex (non-greedy)
+    potential_blocks = re.findall(r'\[[\s\S]*?\]', content)
+
+    # Remove only those blocks that are valid JSON lists of dicts
+    for block in potential_blocks:
+        try:
+            parsed = json.loads(block)
+            if isinstance(parsed, list) and all(isinstance(item, dict) for item in parsed):
+                content = content.replace(block, "")
+        except Exception:
+            # If malformed, ignore removal, keep content as is
+            pass
+
+    # Now just check if "TERMINATE" is anywhere in remaining content (case-insensitive)
+    if "TERMINATE" in content.upper():
+        print(f"Termination found in content after removing JSON blocks.")
+        return True
+
+    print(f"No termination found. Remaining content: {repr(content)}")
+    return False
 
 def create_task_creator_agent() -> AssistantAgent:
     agent = AssistantAgent(
         name="TaskCreatorAgent",
-        system_message= "You are a helpful ai assistant"
-                        "You can break down project descriptions into smaller, meaningful tasks."
-                        "You can read the data from the estimation_tool tool, it will return a dictionary of Optimistic, MostLikely and Pessimistic."
-                        "Given the data from estimation_tool tool, you can use calc_expected_time tool to calculate the ExpectedTime."
-                        "Don't include any other text in your response."
-                        "Respond with <TERMINATE> on its own line, do not explain or elaborate when task are shown in json format",
+        system_message= SYSTEM_MESSAGE,
         llm_config=LLM_CONFIG,
         is_termination_msg=check_termination,
         code_execution_config={"allow_code_execution": True},
