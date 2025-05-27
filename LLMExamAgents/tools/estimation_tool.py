@@ -8,7 +8,7 @@ def estimation_tool(text: str) -> dict[str, float]:
         name="Time Estimation Agent",
         system_message="""
         You are a helpful AI assistant. 
-        Your job is to estimate task durations using prior knowledge, known patterns, and examples given below based on the provided text.
+        Your job is to estimate task durations using prior knowledge, known patterns, and examples given below based on the provided description.
 
         Use the following examples to guide your estimates:
         - Create environment: Optimistic 0.5, MostLikely 1, Pessimistic 2.
@@ -16,7 +16,6 @@ def estimation_tool(text: str) -> dict[str, float]:
         - Creating database schema: Optimistic 2, MostLikely 3, Pessimistic 8.
         - Create API endpoints: Optimistic 0.5, MostLikely 1, Pessimistic 4.
         - Create frontend components: Optimistic 3, MostLikely 4, Pessimistic 6.
-
 
         For each task input, return:
         Optimistic: <number of hours>
@@ -28,8 +27,9 @@ def estimation_tool(text: str) -> dict[str, float]:
         MostLikely: 3
         Pessimistic: 6
 
+        If you cannot confidently estimate, return all values as 0.
         Don't include any other text in your response.
-        Return 'terminate' when the task is done.""",
+        Return 'terminate' in upper case when the task is done.""",
         llm_config=LLM_CONFIG,
     )
     reply = agent.generate_reply(
