@@ -54,11 +54,11 @@ services:
       context: .
       dockerfile: LLMExamAgents/Dockerfile
     ports:
-      - "8008:8008"
+      - "8080:8008"
     networks:
       - app-net
     environment:
-      - OLLAMA_HOST=http://host.docker.internal:11434  # Point to Ollama on the host machine
+      - OLLAMA_HOST=http://host.docker.internal:11434 # Point to Ollama on the host machine
 
 volumes:
   mssql-user:
