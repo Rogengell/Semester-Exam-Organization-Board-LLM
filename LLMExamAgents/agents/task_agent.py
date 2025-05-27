@@ -1,57 +1,82 @@
 import re
 import json
-from autogen import AssistantAgent, ConversableAgent, UserProxyAgent
+from autogen import AssistantAgent, UserProxyAgent
 from LLMExamAgents.config import LLM_CONFIG
+from LLMExamAgents.tools.estimation_tool import estimation_tool
+from LLMExamAgents.tools.calc_expected_time import calc_expected_time
 
 TASK_BREAKDOWN_PROMPT = """
 You are a project planning assistant.
 
-1. You will be given a project component description. Break it down into tasks.
+Your task is to break down a given project component into smaller tasks and provide two sets of different time estimations for each task:
 
-2. For each task:
-- Estimate three time values: Optimistic (O), Most Likely (M), and Pessimistic (P) in hours.
-- Use the tool `calculate_pert` to compute the expected time with the formula (O + 4M + P) / 6.
+1. **First Estimate (Answer 1)**:
+   - Break down the project using your own logic.
+   - For each task, estimate the time using:
+     - Optimistic (O)
+     - Most Likely (M)
+     - Pessimistic (P)
+   - Compute Expected Time using the tool `calc_expected_time`.
+   - Label this as "Answer": "1".
 
-3. Return your answer in the format:
+2. **Second Estimate (Answer 2)**:
+   - After generating the first estimate(Answer 1), create a **new task estimate**(Answer 2).
+   - Call the `estimation_tool` tool with the task description.
+   - Use the returned values (Optimistic, MostLikely, Pessimistic) **exactly as provided**.
+   - Compute Expected Time using the tool `calc_expected_time`.
+   - **Do not overwrite or reuse Answer 1 data.**
+   - If the `estimation_tool` tool returns terminate, skip that task in answer 2.
+   - Label this as "Answer": "2".
+   - Answer 2 must be a separate object with its own values.
+
+### Output Format:
+Return both estimations in the following format (one object per estimation):
 
 [
   {{
-    "TaskName": "",
-    "Description": "",
-    "Optimistic": 2,
-    "MostLikely": 4,
-    "Pessimistic": 6,
-    "ExpectedTime": 4.0
+    "Answer": "1",
+    "TaskName": "Name of task",
+    "Description": "Brief description",
+    "Optimistic": int,
+    "MostLikely": int,
+    "Pessimistic": int,
+    "ExpectedTime": int
   }},
   {{
-    "TaskName": "",
-    "Description": "",
-    "Optimistic": 3,
-    "MostLikely": 5,
-    "Pessimistic": 7,
-    "ExpectedTime": 5.0
+    "Answer": "2",
+    "TaskName": "Name of task",
+    "Description": "Brief description",
+    "Optimistic": int,
+    "MostLikely": int,
+    "Pessimistic": int,
+    "ExpectedTime": int
   }}
 ]
 
-Project Component Description:
-{input}
+### Rules:
+- Output only the list of task dictionaries in the above format.
+- Do not include explanations, headings, comments or summaries.
+- Use the output from the `estimation_tool` exactly as returned. Do not modify the values.
+- If the input is empty or unclear, or if this is a follow-up with no additional user feedback, respond with "terminate" in uppercase.
+- After a maximum of one iteration with no user feedback, respond with "terminate" in uppercase.
 
-Respond only with the tasks. Do not terminate prematurely, always provide task details.
-Do not provide breakdown, only tasks, in the provided format.
-If user does not provide feedback, any output or is empty, determine if more task are needed else respond with "terminate" in uppercase.
-After a maximum of 4 iterations respond with "terminate" in uppercase.
+### Input Project Component Description:
+{input}
 """ 
 
 
 
 def create_task_creator_agent() -> AssistantAgent:
-    return AssistantAgent(
+    agent = AssistantAgent(
         name="TaskCreatorAgent",
         system_message="You are a helpful assistant that breaks down project descriptions into tasks with time estimates.",
         llm_config=LLM_CONFIG,
         is_termination_msg=lambda msg: msg.get("content") is not None and "TERMINATE" in msg.get("content"),
         code_execution_config={"allow_code_execution": True},
     )
+    agent.register_for_llm(name="estimation_tool", description="Estimate task durations based on examples")(estimation_tool)
+    agent.register_for_llm(name="calc_expected_time", description="Calculate expected time from estimates")(calc_expected_time)
+    return agent
 
 def create_user_proxy() -> UserProxyAgent:
     user_proxy = UserProxyAgent(
@@ -61,11 +86,9 @@ def create_user_proxy() -> UserProxyAgent:
         human_input_mode="NEVER",
     )
 
-    user_proxy.register_for_execution(name="calculate_pert")(calculate_pert)
+    user_proxy.register_for_execution(name="calc_expected_time")(calc_expected_time)
+    user_proxy.register_for_execution(name="estimation_tool")(estimation_tool)
     return user_proxy
-
-import json
-import re # Sicherstellen, dass re importiert ist
 
 def extract_json_tasks(history):
     # use a set to avoid duplicates
@@ -112,9 +135,6 @@ def extract_json_tasks(history):
     # this ensures the output matches the expected JSON format
     return all_tasks
     
-def calculate_pert(optimistic: float, most_likely: float, pessimistic: float) -> float:
-    return round((optimistic + 4 * most_likely + pessimistic) / 6, 2)
-
 async def generate_tasks_from_description(description: str):
     user_proxy = create_user_proxy()
     task_creator_agent = create_task_creator_agent()
