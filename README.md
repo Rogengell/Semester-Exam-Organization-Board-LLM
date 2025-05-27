@@ -14,9 +14,9 @@ pip install -r requirements.txt
 
 in this project we are using a local model from Ollama, we recommending to download the llama3.1:8b model. If you prefer an other model
 than you have to change the config file, but the model ist tested based on the recommended model. How to download model:
-´´´bash
+```bash
 ollama run llama3.1:8b
-´´´
+```
 when the model is downloaded and installed you can go on with the next section
 
 ## Compose docker
