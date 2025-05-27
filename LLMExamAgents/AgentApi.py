@@ -2,8 +2,6 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from agents.task_agent import generate_tasks_from_description
 import uvicorn
-import json
-import os
 
 
 # Define input schema
@@ -18,7 +16,6 @@ async def analyze_story(input: UserStoryInput):
     # Trim input
     story = input.story
 
-    # TODO: Agent Call Here
     tasks = await generate_tasks_from_description(story)
     if not tasks:
         raise HTTPException(status_code=500, detail="Agent failed to generate tasks.")
@@ -26,8 +23,4 @@ async def analyze_story(input: UserStoryInput):
     return {"tasks": tasks}
 
 if __name__ == "__main__":
-<<<<<<< HEAD
     uvicorn.run(app, host="0.0.0.0", port=8008, timeout_keep_alive=120, timeout=300)
-=======
-    uvicorn.run(app, host="0.0.0.0", port=8008, timeout_keep_alive=120, timeout=300)
->>>>>>> a7e86937a5f2f128c62a93e1250145ebd13989d3

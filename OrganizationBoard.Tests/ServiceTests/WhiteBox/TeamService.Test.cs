@@ -5,6 +5,7 @@ using OrganizationBoard.Service;
 using Moq;
 using OrganizationBoard.DTO;
 using Polly;
+using Reqnroll.CommonModels;
 
 namespace OrganizationBoard.Tests.ServiceTests.WhiteBox
 {
@@ -107,6 +108,16 @@ namespace OrganizationBoard.Tests.ServiceTests.WhiteBox
             Assert.False(result.IsSuccess);
             Assert.Equal(500, result.StatusCode);
         }
+
+        // #region Attempt at Theory unit test
+        // public delegate Task<Result> ServiceMethodDelegate(TeamService service);
+        // public static IEnumerable<object[]> ExceptionScenarioes =>
+        //     new List<object[]>
+        //     {
+        //         new object[] {new ServiceMethodDelegate(service => service.CreateTeam(new TeamDto{TeamName=null}, 1))},
+                
+        //     }
+        // #endregion
 
         #endregion Tests for CreateTeam
 
