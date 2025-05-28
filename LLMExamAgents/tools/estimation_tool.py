@@ -13,39 +13,11 @@ def calc_expected_time(Optimistic: float, MostLikely: float, Pessimistic: float)
     """
     return round(((Optimistic + (4 * MostLikely) + Pessimistic) / 6), 2)
 
-# def load_data(filepath="db_tasks.json"):
-#     with open(filepath, "r", encoding="utf-8") as f:
-#         return json.load(f)
-
-# def find_best_match(input_text: str, db_task: list[Dict], threshold: float = 50.0) -> Dict:
-#     input_text = input_text.lower()
-#     best_score = 0
-#     best_task = None
-#     for task in db_task:
-#         task_desc = task["Description"].lower()
-#         overlap = len(set(input_text.split()) & set(task_desc.split()))
-#         score = overlap / max(len(task_desc.split()),1)
-#         if score > best_score:
-#             best_score = score
-#             best_task = task
-#     if best_score < threshold:
-#         raise ValueError("No similar task found, YOU ARE USING THE ESTIMATION TOOL.")
-#     return best_task
-
 
 def estimation_tool(text: str) -> dict[str, float]:
     """
     Returns PERT based time estimates using nearest match from task DB
     """
-#     task_db = load_data()
-#     matched_task = find_best_match(text, task_db)
-
-#     most_likely = matched_task["Estimation"]
-#     optimistic = round(most_likely*0.7,2)
-#     pessimistic = round(most_likely*1.5,2)
-#     expected_time = calc_expected_time(optimistic, most_likely, pessimistic)
-#     print(f"[MATCH] Matched to: {matched_task['TaskName']} (Estimation: {most_likely})")
-
     agent = AssistantAgent(
         name="Time Estimation Agent",
         system_message="You are an expert task planner, estimating task duration based on a description. ",
