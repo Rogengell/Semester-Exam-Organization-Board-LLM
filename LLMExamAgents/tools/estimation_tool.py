@@ -4,32 +4,22 @@ import re
 
 
 def estimation_tool(text: str) -> dict[str, float]:
+    """
+    **Estimates task duration based on a detailed description of the task.**
+    Returns a dictionary with 'Optimistic', 'MostLikely', and 'Pessimistic' estimates in hours.
+    Requires a single string input: `text` (the task description).
+    """
     agent = AssistantAgent(
         name="Time Estimation Agent",
         system_message="""
         You are a helpful AI assistant. 
         Your job is to estimate task durations using prior knowledge, known patterns, and examples given below based on the provided description.
 
-        Use the following examples to guide your estimates:
-        - Create environment: Optimistic 0.5, MostLikely 1, Pessimistic 2.
-        - Set up Authentication: Optimistic 1, MostLikely 2, Pessimistic 3.
-        - Creating database schema: Optimistic 2, MostLikely 3, Pessimistic 8.
-        - Create API endpoints: Optimistic 0.5, MostLikely 1, Pessimistic 4.
-        - Create frontend components: Optimistic 3, MostLikely 4, Pessimistic 6.
-
         For each task input, return:
         Optimistic: <number of hours>
         MostLikely: <number of hours>
         Pessimistic: <number of hours>
-
-        Format your response exactly like this (no text outside):
-        Optimistic: 1
-        MostLikely: 3
-        Pessimistic: 6
-
-        If you cannot confidently estimate, return all values as 0.
-        Don't include any other text in your response.
-        Return 'terminate' in upper case when the task is done.""",
+        """,
         llm_config=LLM_CONFIG,
     )
     reply = agent.generate_reply(

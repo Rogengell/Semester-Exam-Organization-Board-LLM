@@ -1,3 +1,4 @@
 {
-    "dotnet.defaultSolution": "OrganizationBoard.sln"
+  "dotnet.defaultSolution": "OrganizationBoard.sln",
+  "taipyStudio.gUI.elementsFilePaths": []
 }

@@ -54,7 +54,7 @@ services:
       context: .
       dockerfile: LLMExamAgents/Dockerfile
     ports:
-      - "8080:8008"
+      - "8008:8008"
     networks:
       - app-net
     environment:
