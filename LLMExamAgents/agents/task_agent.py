@@ -10,7 +10,7 @@ OTHER_PROMPT = """
                 Input Project Component Description: 
                 {input}
                 be as accurate in your breakdowns and time estimation as possible,
-                and use the provided tools estimation_tool and calc_expected_time.
+                and use the provided tool estimation_tool(text: str).
                 """
 
 SYSTEM_MESSAGE = """
@@ -70,7 +70,7 @@ def create_task_creator_agent() -> AssistantAgent:
         code_execution_config={"allow_code_execution": True},
     )
     agent.register_for_llm(name="estimation_tool", description=estimation_tool.__doc__)(estimation_tool)
-    agent.register_for_llm(name="calc_expected_time", description=calc_expected_time.__doc__)(calc_expected_time)
+    # agent.register_for_llm(name="calc_expected_time", description=calc_expected_time.__doc__)(calc_expected_time)
     return agent
 
 def create_user_proxy() -> UserProxyAgent:
@@ -81,7 +81,7 @@ def create_user_proxy() -> UserProxyAgent:
         human_input_mode="NEVER",
     )
 
-    user_proxy.register_for_execution(name="calc_expected_time")(calc_expected_time)
+    # user_proxy.register_for_execution(name="calc_expected_time")(calc_expected_time)
     user_proxy.register_for_execution(name="estimation_tool")(estimation_tool)
     return user_proxy
 
