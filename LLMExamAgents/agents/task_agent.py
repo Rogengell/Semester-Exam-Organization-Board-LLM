@@ -3,14 +3,13 @@ import json
 from autogen import AssistantAgent, UserProxyAgent
 from LLMExamAgents.config import LLM_CONFIG
 from LLMExamAgents.tools.estimation_tool import estimation_tool
-from LLMExamAgents.tools.calc_expected_time import calc_expected_time
 from LLMExamAgents.agents.code_executing_agent import CODING_AGENT_SYSTEM_MESSAGE
 
 OTHER_PROMPT = """
                 Input Project Component Description: 
                 {input}
                 be as accurate in your breakdowns and time estimation as possible,
-                and use the provided tools estimation_tool and calc_expected_time.
+                and use the provided tool `estimation_tool(text: str)`.
                 """
 
 SYSTEM_MESSAGE = """
@@ -70,7 +69,6 @@ def create_task_creator_agent() -> AssistantAgent:
         code_execution_config={"allow_code_execution": True},
     )
     agent.register_for_llm(name="estimation_tool", description=estimation_tool.__doc__)(estimation_tool)
-    agent.register_for_llm(name="calc_expected_time", description=calc_expected_time.__doc__)(calc_expected_time)
     return agent
 
 def create_user_proxy() -> UserProxyAgent:
@@ -80,8 +78,6 @@ def create_user_proxy() -> UserProxyAgent:
         is_termination_msg=check_termination,
         human_input_mode="NEVER",
     )
-
-    user_proxy.register_for_execution(name="calc_expected_time")(calc_expected_time)
     user_proxy.register_for_execution(name="estimation_tool")(estimation_tool)
     return user_proxy
 

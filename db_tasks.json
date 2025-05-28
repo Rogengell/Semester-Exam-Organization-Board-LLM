@@ -1,0 +1,27 @@
+[
+  {
+  "TaskName": "Creation of AI Chat",
+  "Description": "A chatbot for the website",
+  "Estimation": 20
+},
+{
+  "TaskName": "Creation of main backend for system",
+  "Description": "Full working backend systems",
+  "Estimation": 56
+},
+{
+  "TaskName": "Bugfixing",
+  "Description": "Errors within syntax",
+  "Estimation": 1
+},
+{
+  "TaskName": "Develop Database",
+  "Description": "Create the database based on the designed schema.",
+  "Estimation": 100
+},
+{
+  "TaskName": "Define Project Requirements",
+  "Description": "Gather and document the project requirements for the backend system.",
+  "Estimation": 200
+}
+]
