@@ -1,0 +1,17 @@
+[
+  {
+  "TaskName": "Creation of AI Chat",
+  "Description": "A chatbot for the website",
+  "Estimation": 20
+},
+{
+  "TaskName": "Creation of main backend for system",
+  "Description": "Full working backend systems",
+  "Estimation": 56
+},
+{
+  "TaskName": "Bugfixing",
+  "Description": "Errors within syntax",
+  "Estimation": 1
+}
+]
