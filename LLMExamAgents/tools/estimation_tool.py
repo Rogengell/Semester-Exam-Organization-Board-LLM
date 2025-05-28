@@ -1,9 +1,6 @@
 from LLMExamAgents.config import LLM_CONFIG
 from autogen import AssistantAgent
 import re
-import json
-from pathlib import Path
-from typing import Dict
 
 def calc_expected_time(Optimistic: float, MostLikely: float, Pessimistic: float) -> float:
     """
@@ -80,7 +77,6 @@ def estimation_tool(text: str) -> dict[str, float]:
     optimistic = float(match.group(1))
     most_likely = float(match.group(2))
     pessimistic = float(match.group(3))
-    print(f"Parsed values: Optimistic={optimistic}, MostLikely={most_likely}, Pessimistic={pessimistic}")
     expected_time = calc_expected_time(optimistic, most_likely, pessimistic)
     
 
