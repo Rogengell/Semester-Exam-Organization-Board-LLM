@@ -32,7 +32,6 @@ def estimation_tool(text: str) -> dict[str, float]:
     
     You may generalize, extrapolate, or interpolate based on task similarity, complexity, and scope.
     Avoid extreme values unless the task clearly warrants it.
-    Ensure your estimates are reasonable and justifiable in comparison to the examples.,
 
     The Description: {text}
 
