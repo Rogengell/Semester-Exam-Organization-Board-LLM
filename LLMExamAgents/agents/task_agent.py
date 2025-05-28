@@ -3,47 +3,14 @@ import json
 from autogen import AssistantAgent, UserProxyAgent
 from LLMExamAgents.config import LLM_CONFIG
 from LLMExamAgents.tools.estimation_tool import estimation_tool
-from LLMExamAgents.tools.calc_expected_time import calc_expected_time
+from LLMExamAgents.agents.code_executing_agent import CODING_AGENT_SYSTEM_MESSAGE
 
-OTHER_PROMPT = "Input Project Component Description:\n{input}"
-
-SYSTEM_MESSAGE = """
-You are a project planning assistant.
-
-IMPORTANT RULES (you must obey them):
-1. Do NOT use or attempt to call a tool named 'break_down_project' — it does NOT exist.
-2. You MUST break down the input project component yourself, step by step.
-3. For each smaller task, call 'estimation_tool' ONCE and wait for the result.
-4. Then pass the returned result (without changing anything) to 'calc_expected_time'.
-5. NEVER make up any numbers or durations yourself.
-6. Use the exact result from estimation_tool for calc_expected_time.
-
-OUTPUT FORMAT:
-Return a JSON array of tasks, like this:
-[
-  {
-    "TaskName": "Name of task",
-    "Description": "Brief description",
-    "Optimistic": float,
-    "MostLikely": float,
-    "Pessimistic": float,
-    "ExpectedTime": float
-  },
-  {
-    "TaskName": "Name of task",
-    "Description": "Brief description",
-    "Optimistic": float,
-    "MostLikely": float,
-    "Pessimistic": float,
-    "ExpectedTime": float
-  }
-]
-
-After the full output, respond on a new line with exactly:
-<TERMINATE>
-
-Do not include any explanation or text after <TERMINATE>.
-"""
+OTHER_PROMPT = """
+                Input Project Component Description: 
+                {input}
+                be as accurate in your breakdowns and time estimation as possible,
+                and use the provided tool `estimation_tool(text: str)`.
+                """
 
 def check_termination(msg):
     content = msg.get("content", "")
@@ -72,13 +39,12 @@ def check_termination(msg):
 def create_task_creator_agent() -> AssistantAgent:
     agent = AssistantAgent(
         name="TaskCreatorAgent",
-        system_message= SYSTEM_MESSAGE,
+        system_message= CODING_AGENT_SYSTEM_MESSAGE,
         llm_config=LLM_CONFIG,
         is_termination_msg=check_termination,
         code_execution_config={"allow_code_execution": True},
     )
-    agent.register_for_llm(name="estimation_tool", description="Estimate task durations based on examples")(estimation_tool)
-    agent.register_for_llm(name="calc_expected_time", description="Calculate expected time from estimates")(calc_expected_time)
+    agent.register_for_llm(name="estimation_tool", description=estimation_tool.__doc__)(estimation_tool)
     return agent
 
 def create_user_proxy() -> UserProxyAgent:
@@ -88,8 +54,6 @@ def create_user_proxy() -> UserProxyAgent:
         is_termination_msg=check_termination,
         human_input_mode="NEVER",
     )
-
-    user_proxy.register_for_execution(name="calc_expected_time")(calc_expected_time)
     user_proxy.register_for_execution(name="estimation_tool")(estimation_tool)
     return user_proxy
 
@@ -123,6 +87,7 @@ def extract_json_tasks(history):
                             # Sortiere die Items, um Konsistenz für das Hashing zu gewährleisten
                             task_tuple = tuple(sorted(task.items()))
                             unique_tasks.add(task_tuple)
+
             except json.JSONDecodeError as e:
                 print(f"JSON-Dekodierungsfehler: {e} in Inhalt: '{content}'")
                 continue
@@ -144,15 +109,13 @@ async def generate_tasks_from_description(description: str):
 
     user_proxy.initiate_chat(
         task_creator_agent,
-        message=OTHER_PROMPT.format(input=description)
+        message=OTHER_PROMPT.format(input=description),
     )
 
     history = task_creator_agent.chat_messages.get(user_proxy, [])
     if not history:
         return []
     
-    #print("History: ", str(history))
-
     tasks = extract_json_tasks(history)
 
     print("Tasks: "+ str(tasks))
