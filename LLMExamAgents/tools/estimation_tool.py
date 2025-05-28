@@ -1,48 +1,140 @@
+# from LLMExamAgents.config import LLM_CONFIG
+# from autogen import AssistantAgent
+# import re
+
+
+# def estimation_tool(text: str) -> dict[str, float]:
+#     """
+#     **Estimates task duration based on a detailed description of the task.**
+#     Returns a dictionary with 'Optimistic', 'MostLikely', and 'Pessimistic' estimates in hours.
+#     Requires a single string input: `text` (the task description).
+#     """
+#     agent = AssistantAgent(
+#         name="Time Estimation Agent",
+#         system_message="""
+#         You are a helpful AI assistant. 
+#         Your job is to estimate task durations using prior knowledge, known patterns, and examples given below based on the provided description.
+
+#         For each task input, return:
+#         Optimistic: <number of hours>
+#         MostLikely: <number of hours>
+#         Pessimistic: <number of hours>
+#         """,
+#         llm_config=LLM_CONFIG,
+#     )
+#     reply = agent.generate_reply(
+#         messages=[
+#             {"role": "user", "content": f'estimate the time for the following task: {text}'}
+#         ],
+#     )
+
+#     content = reply["content"] if isinstance(reply, dict) else reply
+
+#     if content.strip().upper() == "TERMINATE":
+#         return {"Optimistic": 0, "MostLikely": 0, "Pessimistic": 0}
+    
+#     # Parse using regex
+#     pattern = r"Optimistic\s*:\s*(\d+\.?\d*)\s*MostLikely\s*:\s*(\d+\.?\d*)\s*Pessimistic\s*:\s*(\d+\.?\d*)"
+#     match = re.search(pattern, content.replace('\n', ' '), re.IGNORECASE)
+
+#     if not match:
+#         raise ValueError("No reply found")
+
+#     return{
+#         "Optimistic": float(match.group(1)),
+#         "MostLikely": float(match.group(2)),
+#         "Pessimistic": float(match.group(3))
+#     }
+
+
 from LLMExamAgents.config import LLM_CONFIG
 from autogen import AssistantAgent
 import re
+from pathlib import Path
+from typing import Dict
+
+def calc_expected_time(Optimistic: float, MostLikely: float, Pessimistic: float) -> float:
+    """
+    **Calculates the PERT (Program Evaluation and Review Technique) expected time.**
+    Requires three float inputs: `Optimistic`, `MostLikely`, and `Pessimistic` durations in hours.
+    Returns a single float representing the rounded expected time.
+    """
+    return round(((Optimistic + (4 * MostLikely) + Pessimistic) / 6), 2)
 
 
 def estimation_tool(text: str) -> dict[str, float]:
     """
     **Estimates task duration based on a detailed description of the task.**
-    Returns a dictionary with 'Optimistic', 'MostLikely', and 'Pessimistic' estimates in hours.
+    Returns a dictionary with 'Optimistic', 'MostLikely', and 'Pessimistic' in hours.
     Requires a single string input: `text` (the task description).
+    This function uses an AI agent to generate the estimates based on the provided description.
     """
+
     agent = AssistantAgent(
         name="Time Estimation Agent",
-        system_message="""
-        You are a helpful AI assistant. 
-        Your job is to estimate task durations using prior knowledge, known patterns, and examples given below based on the provided description.
-
-        For each task input, return:
-        Optimistic: <number of hours>
-        MostLikely: <number of hours>
-        Pessimistic: <number of hours>
-        """,
+        system_message="You are an expert task planner, estimating task duration based on a description. ",
         llm_config=LLM_CONFIG,
     )
+
+    estimation_prompt = f"""
+    You are estimating the times in hours for a task from a description.
+
+    Be realistic. Do not invent extreme or random values.
+
+    Do NOT invent or interpolate any other values under any circumstances.
+
+    Be sure to:
+    - You may generalize, extrapolate, or interpolate based on task similarity, complexity, and scope.
+    - Avoid extreme values unless the task clearly warrants it.
+    - **Ensure your estimates are reasonable and justifiable in comparison to the examples**.
+
+    The Description: {text}
+
+   Return ONLY:
+
+    - Optimistic: <number>
+    - MostLikely: <number>
+    - Pessimistic: <number>
+
+    Do not return ExpectedTime; it will be calculated separately.
+    Do not add any explanation or reasoning.
+        """
     reply = agent.generate_reply(
         messages=[
-            {"role": "user", "content": f'estimate the time for the following task: {text}'}
+            {"role": "user", "content": estimation_prompt}
         ],
     )
 
     content = reply["content"] if isinstance(reply, dict) else reply
 
     if content.strip().upper() == "TERMINATE":
-        return {"Optimistic": 0, "MostLikely": 0, "Pessimistic": 0}
+        return {"Optimistic": 0, "MostLikely": 0, "Pessimistic": 0, "ExpectedTime": 0}
     
     # Parse using regex
-    pattern = r"Optimistic\s*:\s*(\d+\.?\d*)\s*MostLikely\s*:\s*(\d+\.?\d*)\s*Pessimistic\s*:\s*(\d+\.?\d*)"
-    match = re.search(pattern, content.replace('\n', ' '), re.IGNORECASE)
+    pattern = (
+    r"Optimistic\s*:\s*(\d+\.?\d*)"
+    r".*?"
+    r"MostLikely\s*:\s*(\d+\.?\d*)"
+    r".*?"
+    r"Pessimistic\s*:\s*(\d+\.?\d*)"
+    )
+    match = re.search(pattern, content, re.IGNORECASE | re.DOTALL)
 
     if not match:
         raise ValueError("No reply found")
+    
+
+
+    optimistic = float(match.group(1))
+    most_likely = float(match.group(2))
+    pessimistic = float(match.group(3))
+    print(f"Parsed values: Optimistic={optimistic}, MostLikely={most_likely}, Pessimistic={pessimistic}")
+    expected_time = calc_expected_time(optimistic, most_likely, pessimistic)
+    
 
     return{
-        "Optimistic": float(match.group(1)),
-        "MostLikely": float(match.group(2)),
-        "Pessimistic": float(match.group(3))
+        "Optimistic": optimistic,
+        "MostLikely": most_likely,
+        "Pessimistic": pessimistic,
+        "ExpectedTime": expected_time
     }
-
